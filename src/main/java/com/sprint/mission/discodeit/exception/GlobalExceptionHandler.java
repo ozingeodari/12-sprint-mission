@@ -1,35 +1,40 @@
 package com.sprint.mission.discodeit.exception;
 
-import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> handleException(IllegalArgumentException e) {
-    e.printStackTrace();
-    return ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)
-        .body(e.getMessage());
-  }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("예상치 못한 오류 발생: {}", e.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(e, 500);
+        return ResponseEntity.status(errorResponse.getStatus()).body(errorResponse);
+    }
 
-  @ExceptionHandler(NoSuchElementException.class)
-  public ResponseEntity<String> handleException(NoSuchElementException e) {
-    e.printStackTrace();
-    return ResponseEntity
-        .status(HttpStatus.NOT_FOUND)
-        .body(e.getMessage());
-  }
+    @ExceptionHandler(DiscodeitException.class)
+    public ResponseEntity<ErrorResponse> handleException(DiscodeitException e) {
+        log.error("커스텀 예외 발생: code={}, message={}, detail={}", e.getErrorCode(), e.getMessage(), e.getDetails());
+        HttpStatus httpStatus = parseHttpStatus(e);
+        ErrorResponse errorResponse = new ErrorResponse(e, httpStatus.value());
+        return ResponseEntity.status(httpStatus).body(errorResponse);
+    }
 
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> handleException(Exception e) {
-    e.printStackTrace();
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(e.getMessage());
-  }
+    private HttpStatus parseHttpStatus(DiscodeitException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        return switch (errorCode) {
+            case USER_NOT_FOUND, USER_STATUS_NOT_FOUND, READ_STATUS_NOT_FOUND, CHANNEL_NOT_FOUND, MESSAGE_NOT_FOUND,
+                 BINARY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case DUPLICATE_USER, DUPLICATE_USER_STATUS, DUPLICATE_READ_STATUS -> HttpStatus.CONFLICT;
+            case INVALID_USER_CREDENTIALS -> HttpStatus.UNAUTHORIZED;
+            case PRIVATE_CHANNEL_UPDATE -> HttpStatus.FORBIDDEN;
+            case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
+            case INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+    }
 }
