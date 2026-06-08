@@ -17,6 +17,14 @@ spring:
       hibernate:
         format_sql: true
 
+management:
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
 logging:
   level:
     com.sprint.mission.discodeit: debug
