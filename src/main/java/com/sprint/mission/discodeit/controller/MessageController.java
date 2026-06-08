@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -45,7 +46,7 @@ public class MessageController implements MessageApi {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageDto> create(
-            @RequestPart("messageCreateRequest") MessageCreateRequest messageCreateRequest,
+            @RequestPart("messageCreateRequest") @Valid MessageCreateRequest messageCreateRequest,
             @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments
     ) {
         log.info("메시지 생성 요청: request={}", messageCreateRequest);
@@ -73,7 +74,7 @@ public class MessageController implements MessageApi {
 
     @PatchMapping(path = "{messageId}")
     public ResponseEntity<MessageDto> update(@PathVariable("messageId") UUID messageId,
-                                             @RequestBody MessageUpdateRequest request) {
+                                             @RequestBody @Valid MessageUpdateRequest request) {
         log.info("메시지 수정 요청: id={}, request={}", messageId, request);
         MessageDto updatedMessage = messageService.update(messageId, request);
         log.debug("메시지 수정 응답: response={}", updatedMessage);
